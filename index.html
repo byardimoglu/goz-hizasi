@@ -59,9 +59,10 @@ button{font:inherit;color:inherit}
 [hidden]{display:none!important}
 
 .app{position:fixed;inset:0;overflow:hidden;background:var(--bg)}
-#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;transform:scaleX(-1);opacity:0;transition:opacity .3s}
+/* --camdx: yatayda önizlemeyi metin sütunu ile ray arasındaki boş alana kaydırır (kaydı etkilemez). */
+#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;transform:translateX(var(--camdx,0px)) scaleX(-1);opacity:0;transition:opacity .3s,transform .3s}
 .app.has-cam #cam{opacity:1}
-.app[data-mirror="0"] #cam{transform:none}
+.app[data-mirror="0"] #cam{transform:translateX(var(--camdx,0px))}
 .app[data-dim="1"] #cam{filter:brightness(.5)}
 .app.is-recording::after{content:"";position:absolute;inset:0;border:3px solid var(--rec);pointer-events:none;z-index:30}
 
@@ -425,7 +426,19 @@ Akışı durdurmak için metne dokun. Geri dönmek ya da ileri atlamak için par
     maxOff = Math.max(0, (endEl ? endEl.offsetTop : textEl.scrollHeight) - lineH * 1.6);
     if (keepProgress) offset = prog * maxOff;
     offset = Math.min(Math.max(0, offset), maxOff);
-    updateSpeed(); apply(); updateMeta(); updateState();
+    updateSpeed(); apply(); updateMeta(); updateState(); placeCam();
+  }
+
+  // Yatayda yüz metnin arkasında kalmasın: önizlemenin ortası boş alanın ortasına gelir. Kadraj modunda ortalanır.
+  function placeCam() {
+    const side = app.dataset.side;
+    let dx = 0;
+    if (!app.classList.contains('is-frame') && (side === 'left' || side === 'right')) {
+      const p = prompter.getBoundingClientRect(), r = $('#rail').getBoundingClientRect();
+      const free = side === 'left' ? (p.right + r.left) / 2 : (r.right + p.left) / 2;
+      dx = Math.round(free - innerWidth / 2);
+    }
+    app.style.setProperty('--camdx', dx + 'px');
   }
 
   function updateSpeed() { const dur = words * 60 / S.wpm; pps = dur > 0 ? maxOff / dur : 0; }
@@ -865,6 +878,7 @@ Akışı durdurmak için metne dokun. Geri dönmek ya da ileri atlamak için par
   $('#frameBtn').addEventListener('click', (e) => {
     const on = !app.classList.contains('is-frame');
     app.classList.toggle('is-frame', on); e.currentTarget.setAttribute('aria-pressed', String(on));
+    placeCam();
   });
 
   // Klavye ve Bluetooth kumanda: boşluk dur/devam, oklar hız ve konum, R kayıt
