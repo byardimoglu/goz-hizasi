@@ -8,12 +8,28 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Göz Hizası">
 <meta name="theme-color" content="#0a0c0f">
-<meta name="robots" content="noindex">
 <title>Göz Hizası</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<meta name="description" content="Telefonla çekerken metnini ön kameranın hemen yanında oku. Ücretsiz teleprompter: kurulum yok, üyelik yok, video cihazından çıkmaz.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="tr_TR">
+<meta property="og:title" content="Göz Hizası · ücretsiz kameralı teleprompter">
+<meta property="og:description" content="Telefonla çekerken metnini ön kameranın hemen yanında oku. Kurulum yok, üyelik yok, video cihazından çıkmaz.">
+<meta property="og:url" content="https://byardimoglu.github.io/goz-hizasi/">
+<meta property="og:image" content="https://byardimoglu.github.io/goz-hizasi/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
 <style>
+/* Atkinson Hyperlegible (SIL OFL 1.1, fonts/OFL.txt) sayfayla birlikte gelir; sayfa dışarıya istek atmaz. */
+@font-face{font-family:"Atkinson Hyperlegible";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/atkinson-400-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Atkinson Hyperlegible";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/atkinson-400-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Atkinson Hyperlegible";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/atkinson-700-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Atkinson Hyperlegible";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/atkinson-700-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Atkinson Hyperlegible";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/atkinson-400i-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Atkinson Hyperlegible";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/atkinson-400i-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* Kamera önizlemesi tam ekran; okuma sütunu ön kameranın olduğu kenarda, kontrol rayı karşı kenarda. */
 :root{
   --bg:#0a0c0f;
@@ -99,6 +115,11 @@ button{font:inherit;color:inherit}
 .app[data-side="right"] .rail{left:calc(var(--sal) + 8px)}
 .app[data-side="left"] .rail,.app[data-side="right"] .rail{top:50%;transform:translateY(-50%);width:140px;max-height:calc(100% - var(--sat) - var(--sab) - 16px);overflow-y:auto;grid-template-columns:1fr 1fr;grid-template-areas:"spd spd" "dn up" "play back" "rec rec" "edit takes" "frame set"}
 .app[data-side="top"] .rail{left:calc(var(--sal) + 8px);right:calc(var(--sar) + 8px);bottom:calc(var(--sab) + 8px);grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"dn spd spd up play back" "edit takes rec rec frame set";align-items:center}
+/* Geniş ekranda (bilgisayar, tablet) kamera üstte ortada: sütun ve ray ortalanır. */
+@media (min-width:700px){
+  .app[data-side="top"] .prompter{left:50%;right:auto;width:min(960px,calc(100% - 32px));transform:translateX(-50%)}
+  .app[data-side="top"] .rail{left:50%;right:auto;width:min(600px,calc(100% - 32px));transform:translateX(-50%)}
+}
 .spd{grid-area:spd;text-align:center;align-self:center;font-variant-numeric:tabular-nums;line-height:1.1}
 .spd b{font-size:19px;font-weight:700}
 .spd small{display:block;font-size:10px;color:var(--ink-2);letter-spacing:.08em;text-transform:uppercase}
@@ -166,6 +187,9 @@ textarea{min-height:42vh;resize:vertical}
 .switch:checked::after{transform:translateX(20px)}
 .tiplist{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:10px;line-height:1.5}
 .tiplist b{font-weight:700}
+.credit{margin:0;padding-top:12px;border-top:1px solid var(--hair);color:var(--ink-3);font-size:12.5px;line-height:1.5}
+.credit a{color:var(--ink-2)}
+#shareOut{font-size:13px;color:var(--ink-2)}
 
 .toast{position:absolute;z-index:60;left:50%;bottom:calc(var(--sab) + 16px);transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600;font-size:14px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.4)}
 
@@ -242,7 +266,9 @@ textarea{min-height:42vh;resize:vertical}
       <div class="field"><label for="edBody">Okunacak metin</label><textarea id="edBody"></textarea></div>
       <p class="hint" id="edMeta"></p>
       <p class="hint">Her satır yeni paragraf olur. Köşeli parantez içindeki not okunmaz, sarı görünür: [ekranı göster]. İki eğik çizgi // kısa duraklama işaretidir.</p>
-      <div class="acts"><button class="textbtn danger" id="edDel" type="button">Bu metni sil</button></div>
+      <div class="acts"><button class="textbtn" id="edShare" type="button">Bağlantıyla gönder</button><button class="textbtn danger" id="edDel" type="button">Bu metni sil</button></div>
+      <p class="hint">Metni bilgisayarda yazıp bağlantıyla telefona gönderebilirsin. Bağlantıyı açan cihaza metin eklenir. Metin bağlantının içinde taşınır, hiçbir sunucuya kaydedilmez.</p>
+      <input type="text" id="shareOut" readonly hidden aria-label="Metin bağlantısı">
     </div>
   </section>
 
@@ -264,8 +290,8 @@ textarea{min-height:42vh;resize:vertical}
           <div class="stepper"><button class="textbtn" id="fsDn" type="button" aria-label="Yazıyı küçült">A−</button><span id="fsVal">32</span><button class="textbtn" id="fsUp" type="button" aria-label="Yazıyı büyüt">A+</button></div>
         </div>
         <div class="row">
-          <div><b>Metin tarafı</b><small>Yatayda metin ön kameranın yanında durur. Dikeyde hep üsttedir.</small></div>
-          <div class="seg" id="sideSeg"><button type="button" data-v="auto">Otomatik</button><button type="button" data-v="left">Sol</button><button type="button" data-v="right">Sağ</button></div>
+          <div><b>Metin tarafı</b><small>Otomatik: telefon yataysa metin ön kameranın yanında, bilgisayarda ve dikey telefonda üstte durur.</small></div>
+          <div class="seg" id="sideSeg"><button type="button" data-v="auto">Otomatik</button><button type="button" data-v="top">Üst</button><button type="button" data-v="left">Sol</button><button type="button" data-v="right">Sağ</button></div>
         </div>
         <label class="row" for="mirrorSw">
           <div><b>Önizlemede ayna</b><small>Yalnız ekranda; kayıt normal yönde olur</small></div>
@@ -281,21 +307,25 @@ textarea{min-height:42vh;resize:vertical}
         </label>
       </div>
       <div class="acts"><button class="textbtn" id="tipsBtn" type="button">İpuçlarını göster</button><button class="textbtn" id="camReBtn" type="button">Kamerayı yeniden aç</button></div>
+      <p class="credit">Göz Hizası ücretsizdir ve açık kaynaktır. Berk Yardımoğlu tarafından sunulur. <a href="https://github.com/byardimoglu/goz-hizasi" target="_blank" rel="noopener">Kaynak kodu</a></p>
     </div>
   </section>
 
   <section class="sheet" id="sheet-tips" data-sheet="tips" hidden aria-label="İpuçları">
     <div class="sheet-in narrow">
-      <h2>Çekimden önce</h2>
+      <h2>Göz Hizası'na hoş geldin</h2>
+      <p class="hint">Telefonla çekerken metnini ön kameranın hemen yanında oku. İzleyen, gözlerinin lense baktığını görür.</p>
       <ol class="tiplist">
-        <li><b>Telefonu yatay tut.</b> Videodaki diğer klipler 1920×1080; bu çekim de onlarla aynı ölçüde olur.</li>
-        <li><b>Sarı okların hizasındaki satırı oku.</b> Metin ön kameranın yanında akar, gözün lense yakın kalır.</li>
-        <li><b>Metne dokun:</b> durur ya da devam eder. Parmağınla kaydırırsan geri ya da ileri gider.</li>
+        <li><b>Metnini ekle.</b> Metin düğmesine dokun, yazını yapıştır. Örnek metinle de deneyebilirsin.</li>
+        <li><b>Telefonu nasıl çekeceksen öyle tut.</b> Yatay tutarsan metin ön kameranın olduğu kenarda, dikey tutarsan üstte akar.</li>
+        <li><b>Sarı okların hizasındaki satırı oku.</b> Metne dokununca akış durur, bir daha dokununca devam eder. Parmağınla kaydırırsan geri ya da ileri gider.</li>
         <li><b>Kayıt düğmesine bas.</b> 3 saniyelik geri sayımdan sonra metin kendiliğinden akar. Hızı kayıt sırasında da değiştirebilirsin.</li>
-        <li><b>Bitince Çekimler › Kaydet.</b> Fotoğraflar'a kaydet ya da AirDrop ile bilgisayara gönder.</li>
+        <li><b>Bitince Çekimler › Kaydet.</b> Fotoğraflar'a kaydet ya da AirDrop ile başka bir cihaza gönder.</li>
       </ol>
-      <p class="hint">Safari'de Paylaş › Ana Ekrana Ekle dersen sayfa tam ekran açılır.</p>
-      <div class="acts"><button class="textbtn primary" type="button" data-close>Anladım</button></div>
+      <p class="hint">Çektiğin video ve yazdığın metin cihazından çıkmaz. Sayfa hiçbir yere veri göndermez; üyelik ve kurulum yoktur.</p>
+      <p class="hint">Safari'de Paylaş › Ana Ekrana Ekle dersen sayfa tam ekran açılır. Bilgisayarda boşluk tuşu akışı durdurur, ↑ ↓ hızı değiştirir, R kaydı başlatır.</p>
+      <div class="acts"><button class="textbtn primary" type="button" data-close>Başla</button></div>
+      <p class="credit">Göz Hizası ücretsizdir ve açık kaynaktır. Berk Yardımoğlu tarafından sunulur. <a href="https://github.com/byardimoglu/goz-hizasi" target="_blank" rel="noopener">Kaynak kodu</a></p>
     </div>
   </section>
 
@@ -309,10 +339,12 @@ textarea{min-height:42vh;resize:vertical}
   const app = $('#app'), cam = $('#cam'), prompter = $('#prompter'), vp = $('#viewport'), scroller = $('#scroll'), textEl = $('#text'), player = $('#player');
 
   const DEFAULT_SCRIPTS = [{
-    id: 'bolum-1',
-    title: 'Bölüm 1 · Giriş',
-    body: `Sayın kurul üyeleri, merhaba. Ben Berk Yardımoğlu, DeutschGate'in kurucusuyum. DeutschGate, Goethe-Zertifikat Almanca sınavlarına hazırlanan Türkçe konuşan adaylar için yapay zekâ destekli bir sınav hazırlık platformu. Bu videoda önce projemi anlatacağım; ardından çalışma alanımı ve hizmetin nasıl üretilip sunulduğunu göstereceğim.
-Kısaca kendimden bahsedeyim. İşletme mezunuyum ve 8 yıl Renault MAİS'te kurumsal filo satışında çalıştım. Son iki yıldır yapay zekâ destekli araçlarla yazılım geliştiriyorum; DeutschGate'i Nisan 2026'dan bu yana tek başıma geliştirdim. Goethe B1 sınavına da kendim hazırlandım ve sertifikamı aldım. Bu projede kurumsal satış, yazılım ve sınav deneyimimi bir araya getiriyorum.`
+    id: 'ornek',
+    title: 'Örnek metin',
+    body: `Merhaba, bu Göz Hizası'nın örnek metni. Kendi metnini eklemek için Metin düğmesine dokun ve yazını yapıştır.
+Metin, ön kameranın olduğu tarafta akar. Sarı okların hizasındaki satırı okursan gözün lense yakın kalır ve izleyen sana bakıyormuşsun gibi görür.
+Akışı durdurmak için metne dokun. Geri dönmek ya da ileri atlamak için parmağınla kaydır. Hızı eksi ve artı düğmeleriyle, dakikada okuduğun kelime sayısına göre ayarla.
+[Bu sarı not okunmaz] Köşeli parantez içine kendine not yazabilirsin. İki eğik çizgi kısa bir duraklama işaretidir. // Kaydı bitirmek için kırmızı düğmeye bir daha bas, sonra çekimini Fotoğraflar'a kaydet.`
   }];
   const DEFAULTS = { wpm: 105, fs: 32, side: 'auto', mirror: true, dim: false, countdown: true, tipsSeen: false };
 
@@ -367,9 +399,13 @@ Kısaca kendimden bahsedeyim. İşletme mezunuyum ve 8 yıl Renault MAİS'te kur
     layout(false);
   }
 
+  // Dokunmatik olmayan cihaz = bilgisayar; kamerası ekranın üstünde ortadadır.
+  const isDesk = () => navigator.maxTouchPoints === 0 && matchMedia('(pointer: fine)').matches;
+
   function resolveSide() {
     if (innerWidth <= innerHeight) return 'top';
-    if (S.side === 'left' || S.side === 'right') return S.side;
+    if (S.side === 'left' || S.side === 'right' || S.side === 'top') return S.side;
+    if (isDesk()) return 'top';
     const o = window.orientation;
     if (o === 90) return 'left';
     if (o === -90 || o === 270) return 'right';
@@ -493,8 +529,8 @@ Kısaca kendimden bahsedeyim. İşletme mezunuyum ve 8 yıl Renault MAİS'te kur
     if (!stream || !w) { el.hidden = true; return; }
     const land = w > h;
     el.hidden = false;
-    el.textContent = w + '×' + h + (land ? ' · yatay' : ' · dikey, yan çevir');
-    el.dataset.state = land && w >= 1280 ? 'ok' : 'warn';
+    el.textContent = w + '×' + h + (land ? ' · yatay' : ' · dikey');
+    el.dataset.state = Math.max(w, h) >= 1280 ? 'ok' : 'warn';
   }
   cam.addEventListener('resize', updateRes);
   cam.addEventListener('loadedmetadata', updateRes);
@@ -675,7 +711,7 @@ Kısaca kendimden bahsedeyim. İşletme mezunuyum ve 8 yıl Renault MAİS'te kur
   async function saveTake(t) {
     let file = null;
     try { file = new File([t.blob], t.name, { type: t.type }); } catch (e) {}
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (file && navigator.maxTouchPoints > 0 && navigator.canShare && navigator.canShare({ files: [file] })) {
       try { await navigator.share({ files: [file] }); t.saved = true; renderTakes(); return; }
       catch (e) { if (e && e.name === 'AbortError') return; }
     }
@@ -730,8 +766,61 @@ Kısaca kendimden bahsedeyim. İşletme mezunuyum ve 8 yıl Renault MAİS'te kur
     $('#edTitle').value = active().title || '';
     $('#edBody').value = active().body || '';
     $('#edDel').hidden = scripts.length < 2;
+    $('#shareOut').hidden = true;
     edMeta();
   }
+
+  /* ---------- Bağlantıyla metin aktarma: #m=<base64url(JSON)>; parça sunucuya gitmez ---------- */
+  const b64e = (str) => {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+  const b64d = (s) => {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    const bin = atob(s), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  };
+
+  function importFromHash() {
+    const m = location.hash.match(/^#m=([A-Za-z0-9_-]+)$/);
+    if (!m) return null;
+    let data = null;
+    try { data = JSON.parse(b64d(m[1])); } catch (e) {}
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    if (!data || typeof data.b !== 'string' || !data.b.trim()) { toast('Bağlantıdaki metin okunamadı.'); return null; }
+    let s = scripts.find((x) => x.body === data.b);
+    if (!s) {
+      s = { id: 'm' + Date.now(), title: String(data.t || 'Gelen metin').slice(0, 80), body: data.b.slice(0, 100000) };
+      // Hiç değiştirilmemiş örnek metin listede yer kaplamasın.
+      if (scripts.length === 1 && scripts[0].id === 'ornek' && scripts[0].body === DEFAULT_SCRIPTS[0].body) scripts = [];
+      scripts.push(s);
+    }
+    activeId = s.id;
+    saveScripts();
+    return s.title;
+  }
+
+  async function shareScript() {
+    const s = active();
+    if (!(s.body || '').trim()) { toast('Önce metni yaz.'); return; }
+    const url = location.origin + location.pathname + '#m=' + b64e(JSON.stringify({ t: s.title || '', b: s.body }));
+    const out = $('#shareOut');
+    if (navigator.maxTouchPoints > 0 && navigator.share) {
+      try { await navigator.share({ title: s.title || 'Göz Hizası metni', url }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(url); toast('Bağlantı kopyalandı. Telefonuna gönderip aç.'); }
+    catch (e) { out.value = url; out.hidden = false; out.focus(); out.select(); toast('Bağlantıyı seçip kopyala.'); }
+  }
+  $('#edShare').addEventListener('click', shareScript);
+  addEventListener('hashchange', () => {
+    const t = importFromHash();
+    if (t) { renderText(); if (!$('#sheet-editor').hidden) fillEditor(); toast('“' + t + '” eklendi.'); }
+  });
   $('#edTitle').addEventListener('input', (e) => {
     active().title = e.target.value; saveScripts();
     const tab = $('#edTabs .tab[aria-pressed="true"]'); if (tab) tab.textContent = e.target.value || 'Adsız';
@@ -803,9 +892,11 @@ Kısaca kendimden bahsedeyim. İşletme mezunuyum ve 8 yıl Renault MAİS'te kur
   /* ---------- Başlangıç ---------- */
   applyLook();
   $('#spdVal').textContent = S.wpm;
+  const imported = importFromHash();
   renderText();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout(true));
   if (!S.tipsSeen) openSheet('tips');
+  if (imported) toast('“' + imported + '” eklendi.');
   (async () => {
     try {
       const p = navigator.permissions && await navigator.permissions.query({ name: 'camera' });
