@@ -438,7 +438,8 @@ Akışı durdurmak için metne dokun. Geri dönmek ya da ileri atlamak için par
   }
   function updateState() {
     $('#stateChip').textContent = playing ? 'Akıyor' : (offset > 1 ? (offset >= maxOff - 1 ? 'Bitti' : 'Durdu') : 'Hazır');
-    $('#icoPlay').hidden = playing; $('#icoPause').hidden = !playing;
+    // SVG öğelerinde .hidden özelliği yok; özniteliği doğrudan değiştir.
+    $('#icoPlay').toggleAttribute('hidden', playing); $('#icoPause').toggleAttribute('hidden', !playing);
     $('#playLbl').textContent = playing ? 'Durdur' : (offset > 1 && offset < maxOff - 1 ? 'Devam' : 'Prova');
   }
 
