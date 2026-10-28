@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Göz Hizası">
+<meta name="theme-color" content="#0a0c0f">
+<meta name="robots" content="noindex">
+<title>Göz Hizası</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Kamera önizlemesi tam ekran; okuma sütunu ön kameranın olduğu kenarda, kontrol rayı karşı kenarda. */
+:root{
+  --bg:#0a0c0f;
+  --ink:#f6f4ef;
+  --ink-2:rgba(246,244,239,.66);
+  --ink-3:rgba(246,244,239,.38);
+  --on-ink:#101214;
+  --glass:rgba(10,12,16,.72);
+  --glass-2:rgba(255,255,255,.08);
+  --hair:rgba(255,255,255,.14);
+  --cue:#ffc94a;
+  --rec:#ff453a;
+  --ok:#58d68d;
+  --f-read:"Atkinson Hyperlegible", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  --f-ui:-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
+  --fs:32px;
+  --sat:env(safe-area-inset-top,0px);
+  --sar:env(safe-area-inset-right,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 var(--f-ui);overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+.app{position:fixed;inset:0;overflow:hidden;background:var(--bg)}
+#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;transform:scaleX(-1);opacity:0;transition:opacity .3s}
+.app.has-cam #cam{opacity:1}
+.app[data-mirror="0"] #cam{transform:none}
+.app[data-dim="1"] #cam{filter:brightness(.5)}
+.app.is-recording::after{content:"";position:absolute;inset:0;border:3px solid var(--rec);pointer-events:none;z-index:30}
+
+/* Kamera kapalıyken boş alanda duran kart */
+.camoff{position:absolute;z-index:2;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center}
+.app.has-cam .camoff{display:none}
+.app[data-side="left"] .camoff{top:0;bottom:0;left:56%;right:156px}
+.app[data-side="right"] .camoff{top:0;bottom:0;right:56%;left:156px}
+.app[data-side="top"] .camoff{left:0;right:0;top:48%;bottom:150px}
+.camoff-in{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:22em}
+.camoff-t{margin:0;font:700 18px/1.2 var(--f-read)}
+.camoff-d{margin:0;color:var(--ink-2);font-size:14px;text-wrap:pretty}
+
+/* Okuma sütunu */
+.prompter{position:absolute;z-index:5;background:var(--glass);border-radius:20px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair);transition:opacity .2s}
+.app[data-side="left"] .prompter{left:calc(var(--sal) + 8px);top:calc(var(--sat) + 8px);bottom:calc(var(--sab) + 8px);width:calc(56% - var(--sal))}
+.app[data-side="right"] .prompter{right:calc(var(--sar) + 8px);top:calc(var(--sat) + 8px);bottom:calc(var(--sab) + 8px);width:calc(56% - var(--sar))}
+.app[data-side="top"] .prompter{left:calc(var(--sal) + 8px);right:calc(var(--sar) + 8px);top:calc(var(--sat) + 6px);height:46%}
+.app.is-frame .prompter{opacity:.06;pointer-events:none}
+
+.viewport{position:absolute;left:0;right:0;top:0;bottom:32px;overflow:hidden;touch-action:none;cursor:pointer;
+  -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.32) 0,rgba(0,0,0,.32) calc(var(--readAt,100px) - var(--fs)*1.5),#000 calc(var(--readAt,100px) - var(--fs)*.6),#000 84%,transparent 100%);
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.32) 0,rgba(0,0,0,.32) calc(var(--readAt,100px) - var(--fs)*1.5),#000 calc(var(--readAt,100px) - var(--fs)*.6),#000 84%,transparent 100%)}
+.scroll{position:absolute;left:0;right:0;top:0;will-change:transform}
+.ptext{position:relative;padding:0 clamp(16px,5%,30px);font:700 var(--fs)/1.34 var(--f-read);letter-spacing:.004em;color:var(--ink)}
+.ptext p{margin:0 0 .6em}
+.ptext .cue{display:inline-block;vertical-align:.25em;margin:0 .25em;padding:.15em .5em;border:1px solid var(--cue);border-radius:6px;font:italic 400 .5em/1.2 var(--f-read);color:var(--cue);letter-spacing:.02em}
+.ptext .pause{color:var(--cue);font-weight:400}
+.ptext .empty{color:var(--ink-3);font-weight:400}
+.ptext .end{display:flex;align-items:center;gap:.8em;margin-top:1.1em;font:600 .4em/1 var(--f-ui);letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3)}
+.ptext .end::before,.ptext .end::after{content:"";flex:1;height:1px;background:var(--hair)}
+
+.mark{position:absolute;left:0;right:0;top:var(--readAt,100px);height:0;pointer-events:none}
+.mark::before,.mark::after{content:"";position:absolute;top:-9px;border-style:solid}
+.mark::before{left:3px;border-width:9px 0 9px 11px;border-color:transparent transparent transparent var(--cue)}
+.mark::after{right:3px;border-width:9px 11px 9px 0;border-color:transparent var(--cue) transparent transparent}
+
+.pfoot{position:absolute;left:0;right:0;bottom:0;height:32px;display:flex;align-items:center;gap:12px;padding:0 16px;border-top:1px solid var(--hair);font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:6px;flex:none}
+.chip.grow{flex:1;justify-content:flex-end;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.chip.rec{color:var(--rec);font-weight:700}
+.chip.rec i{width:8px;height:8px;border-radius:50%;background:var(--rec);animation:blink 1s steps(2,start) infinite}
+#resChip[data-state="ok"]{color:var(--ok)}
+#resChip[data-state="warn"]{color:var(--cue)}
+.mic b{display:block;width:34px;height:5px;border-radius:3px;background:var(--hair);overflow:hidden}
+.mic i{display:block;height:100%;width:100%;background:var(--ok);transform-origin:left;transform:scaleX(0)}
+
+/* Kontrol rayı */
+.rail{position:absolute;z-index:6;display:grid;gap:6px;padding:8px;background:rgba(10,12,16,.58);border-radius:20px;box-shadow:inset 0 0 0 1px var(--hair)}
+.app[data-side="left"] .rail{right:calc(var(--sar) + 8px)}
+.app[data-side="right"] .rail{left:calc(var(--sal) + 8px)}
+.app[data-side="left"] .rail,.app[data-side="right"] .rail{top:50%;transform:translateY(-50%);width:140px;max-height:calc(100% - var(--sat) - var(--sab) - 16px);overflow-y:auto;grid-template-columns:1fr 1fr;grid-template-areas:"spd spd" "dn up" "play back" "rec rec" "edit takes" "frame set"}
+.app[data-side="top"] .rail{left:calc(var(--sal) + 8px);right:calc(var(--sar) + 8px);bottom:calc(var(--sab) + 8px);grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"dn spd spd up play back" "edit takes rec rec frame set";align-items:center}
+.spd{grid-area:spd;text-align:center;align-self:center;font-variant-numeric:tabular-nums;line-height:1.1}
+.spd b{font-size:19px;font-weight:700}
+.spd small{display:block;font-size:10px;color:var(--ink-2);letter-spacing:.08em;text-transform:uppercase}
+.btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:44px;min-width:0;padding:4px;border:0;border-radius:12px;background:var(--glass-2);color:var(--ink);font-size:11px;cursor:pointer}
+.btn svg{width:20px;height:20px;flex:none}
+.btn .big{font-size:24px;line-height:1;font-weight:500}
+.btn:active{background:rgba(255,255,255,.2)}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+.btn:disabled{opacity:.3;cursor:default}
+.btn:focus-visible,.recbtn:focus-visible,.textbtn:focus-visible,.tab:focus-visible,.seg button:focus-visible,.switch:focus-visible{outline:2px solid var(--cue);outline-offset:2px}
+.dn{grid-area:dn}.up{grid-area:up}.play{grid-area:play}.back{grid-area:back}.edit{grid-area:edit}.takes{grid-area:takes}.frame{grid-area:frame}.set{grid-area:set}
+.recbtn{grid-area:rec;justify-self:center;width:64px;height:64px;padding:0;border-radius:50%;border:3px solid var(--ink);background:transparent;display:grid;place-items:center;cursor:pointer}
+.recbtn i{display:block;width:46px;height:46px;border-radius:50%;background:var(--rec);transition:width .2s,height .2s,border-radius .2s}
+.app.is-recording .recbtn i{width:24px;height:24px;border-radius:6px}
+.app.is-counting .recbtn i{animation:pulse .5s ease-in-out infinite alternate}
+
+.countdown{position:absolute;inset:0;z-index:20;display:grid;place-items:center;font:700 min(42vh,42vw)/1 var(--f-read);color:var(--ink);text-shadow:0 6px 40px rgba(0,0,0,.7);pointer-events:none}
+
+/* Paneller */
+.sheet{position:absolute;inset:0;z-index:40;background:rgba(8,9,12,.95);overflow-y:auto;-webkit-overflow-scrolling:touch;padding-block:calc(var(--sat) + 14px) calc(var(--sab) + 24px);padding-left:max(16px,var(--sal));padding-right:max(16px,var(--sar))}
+.sheet-in{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.sheet-in.narrow{max-width:560px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sheet h2{margin:0;font:700 21px/1.2 var(--f-read);text-wrap:balance}
+.textbtn{border:0;background:var(--glass-2);border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer;color:var(--ink)}
+.textbtn.primary{background:var(--ink);color:var(--on-ink)}
+.textbtn.danger{color:#ff8a80}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.hint{margin:0;color:var(--ink-2);font-size:13.5px;line-height:1.5;max-width:65ch}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.tab{flex:none;border:1px solid var(--hair);background:transparent;color:var(--ink-2);border-radius:999px;padding:8px 14px;font-weight:600;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.tab.add{border-style:dashed}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:11.5px;color:var(--ink-2);letter-spacing:.08em;text-transform:uppercase}
+input[type="text"],textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--hair);border-radius:12px;color:var(--ink);font:16px/1.5 var(--f-ui);padding:12px;-webkit-user-select:text;user-select:text}
+input[type="text"]:focus,textarea:focus{outline:2px solid var(--cue);outline-offset:0;border-color:transparent}
+textarea{min-height:42vh;resize:vertical}
+#edMeta{color:var(--ink);font-variant-numeric:tabular-nums}
+
+#player{width:100%;max-height:55vh;background:#000;border-radius:12px}
+.takes-list{display:flex;flex-direction:column;gap:8px}
+.take{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border-radius:14px;background:rgba(255,255,255,.05)}
+.take[aria-current="true"]{box-shadow:inset 0 0 0 1px var(--cue)}
+.take-name{font-weight:700}
+.take-meta{font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.take-meta .saved{color:var(--ok)}
+.take-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.take-acts .textbtn{padding:8px 12px}
+.empty-note{margin:0;padding:18px;border:1px dashed var(--hair);border-radius:14px;color:var(--ink-2);text-align:center}
+
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--hair);cursor:default}
+.row > div:first-child{min-width:0}
+.row b{display:block;font-weight:650}
+.row small{display:block;color:var(--ink-2);font-size:12.5px;line-height:1.4}
+.stepper{display:flex;align-items:center;gap:8px;flex:none;font-variant-numeric:tabular-nums}
+.stepper span{min-width:2.6em;text-align:center}
+.seg{display:inline-flex;flex:none;background:rgba(255,255,255,.07);border-radius:10px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--ink-2);padding:7px 11px;border-radius:8px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+.switch{appearance:none;-webkit-appearance:none;flex:none;width:50px;height:30px;margin:0;border-radius:999px;background:rgba(255,255,255,.18);position:relative;cursor:pointer;transition:background .2s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--ink);transition:transform .2s}
+.switch:checked{background:var(--ok)}
+.switch:checked::after{transform:translateX(20px)}
+.tiplist{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:10px;line-height:1.5}
+.tiplist b{font-weight:700}
+
+.toast{position:absolute;z-index:60;left:50%;bottom:calc(var(--sab) + 16px);transform:translateX(-50%);max-width:calc(100% - 32px);padding:10px 16px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600;font-size:14px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+
+@keyframes blink{to{visibility:hidden}}
+@keyframes pulse{from{transform:scale(.85)}to{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app" data-side="left" data-mirror="1" data-dim="0">
+  <video id="cam" playsinline muted autoplay></video>
+
+  <div class="camoff" id="camoff">
+    <div class="camoff-in">
+      <p class="camoff-t">Kamera kapalı</p>
+      <p class="camoff-d" id="camMsg">Metni şimdiden prova edebilirsin. Çekim için ön kamerayı aç.</p>
+      <button class="textbtn primary" id="camBtn" type="button">Kamerayı aç</button>
+    </div>
+  </div>
+
+  <section class="prompter" id="prompter" aria-label="Okuma metni">
+    <div class="viewport" id="viewport">
+      <div class="scroll" id="scroll"><div class="ptext" id="text"></div></div>
+    </div>
+    <div class="mark" aria-hidden="true"></div>
+    <div class="pfoot">
+      <span class="chip rec" id="recChip" hidden><i></i><span id="recClock">0:00</span></span>
+      <span class="chip" id="stateChip">Hazır</span>
+      <span class="chip" id="resChip" hidden></span>
+      <span class="chip mic" id="micChip" hidden>mik<b><i id="micBar"></i></b></span>
+      <span class="chip grow" id="metaChip"></span>
+    </div>
+  </section>
+
+  <nav class="rail" id="rail" aria-label="Kontroller">
+    <div class="spd"><b id="spdVal">105</b><small>kelime/dk</small></div>
+    <button class="btn dn" id="slower" type="button" aria-label="Yavaşlat"><span class="big">−</span></button>
+    <button class="btn up" id="faster" type="button" aria-label="Hızlandır"><span class="big">+</span></button>
+    <button class="btn play" id="playBtn" type="button">
+      <svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+      <svg id="icoPause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+      <span id="playLbl">Prova</span>
+    </button>
+    <button class="btn back" id="backBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h2.2v14H6zM19 5.5v13L9.5 12z"/></svg>
+      <span>Başa</span>
+    </button>
+    <button class="recbtn" id="recBtn" type="button" aria-label="Kaydı başlat"><i></i></button>
+    <button class="btn edit" id="editBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
+      <span>Metin</span>
+    </button>
+    <button class="btn takes" id="takesBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/></svg>
+      <span id="takesLbl">Çekimler</span>
+    </button>
+    <button class="btn frame" id="frameBtn" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+      <span>Kadraj</span>
+    </button>
+    <button class="btn set" id="setBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+      <span>Ayarlar</span>
+    </button>
+  </nav>
+
+  <div class="countdown" id="countdown" hidden>3</div>
+
+  <section class="sheet" id="sheet-editor" data-sheet="editor" hidden aria-label="Metinler">
+    <div class="sheet-in">
+      <div class="sheet-head"><h2>Metinler</h2><button class="textbtn primary" type="button" data-close>Bitti</button></div>
+      <div class="tabs" id="edTabs"></div>
+      <div class="field"><label for="edTitle">Başlık</label><input type="text" id="edTitle" autocomplete="off"></div>
+      <div class="field"><label for="edBody">Okunacak metin</label><textarea id="edBody"></textarea></div>
+      <p class="hint" id="edMeta"></p>
+      <p class="hint">Her satır yeni paragraf olur. Köşeli parantez içindeki not okunmaz, sarı görünür: [ekranı göster]. İki eğik çizgi // kısa duraklama işaretidir.</p>
+      <div class="acts"><button class="textbtn danger" id="edDel" type="button">Bu metni sil</button></div>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheet-takes" data-sheet="takes" hidden aria-label="Çekimler">
+    <div class="sheet-in">
+      <div class="sheet-head"><h2>Çekimler</h2><button class="textbtn primary" type="button" data-close>Kapat</button></div>
+      <video id="player" controls playsinline hidden></video>
+      <div class="takes-list" id="takeList"></div>
+      <p class="hint">Çekimler yalnız bu sayfa açıkken durur. Beğendiğin çekimi hemen Kaydet ile Fotoğraflar'a al ya da AirDrop ile bilgisayara gönder.</p>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheet-settings" data-sheet="settings" hidden aria-label="Ayarlar">
+    <div class="sheet-in">
+      <div class="sheet-head"><h2>Ayarlar</h2><button class="textbtn primary" type="button" data-close>Kapat</button></div>
+      <div class="rows">
+        <div class="row">
+          <div><b>Yazı boyutu</b><small>Büyüdükçe satır başına daha az kelime düşer</small></div>
+          <div class="stepper"><button class="textbtn" id="fsDn" type="button" aria-label="Yazıyı küçült">A−</button><span id="fsVal">32</span><button class="textbtn" id="fsUp" type="button" aria-label="Yazıyı büyüt">A+</button></div>
+        </div>
+        <div class="row">
+          <div><b>Metin tarafı</b><small>Yatayda metin ön kameranın yanında durur. Dikeyde hep üsttedir.</small></div>
+          <div class="seg" id="sideSeg"><button type="button" data-v="auto">Otomatik</button><button type="button" data-v="left">Sol</button><button type="button" data-v="right">Sağ</button></div>
+        </div>
+        <label class="row" for="mirrorSw">
+          <div><b>Önizlemede ayna</b><small>Yalnız ekranda; kayıt normal yönde olur</small></div>
+          <input type="checkbox" class="switch" id="mirrorSw">
+        </label>
+        <label class="row" for="dimSw">
+          <div><b>Kamerayı karart</b><small>Yazı görüntünün üstünde daha net seçilir</small></div>
+          <input type="checkbox" class="switch" id="dimSw">
+        </label>
+        <label class="row" for="cdSw">
+          <div><b>3 saniye geri sayım</b><small>Kayda basınca metin sayımdan sonra akmaya başlar</small></div>
+          <input type="checkbox" class="switch" id="cdSw">
+        </label>
+      </div>
+      <div class="acts"><button class="textbtn" id="tipsBtn" type="button">İpuçlarını göster</button><button class="textbtn" id="camReBtn" type="button">Kamerayı yeniden aç</button></div>
+    </div>
+  </section>
+
+  <section class="sheet" id="sheet-tips" data-sheet="tips" hidden aria-label="İpuçları">
+    <div class="sheet-in narrow">
+      <h2>Çekimden önce</h2>
+      <ol class="tiplist">
+        <li><b>Telefonu yatay tut.</b> Videodaki diğer klipler 1920×1080; bu çekim de onlarla aynı ölçüde olur.</li>
+        <li><b>Sarı okların hizasındaki satırı oku.</b> Metin ön kameranın yanında akar, gözün lense yakın kalır.</li>
+        <li><b>Metne dokun:</b> durur ya da devam eder. Parmağınla kaydırırsan geri ya da ileri gider.</li>
+        <li><b>Kayıt düğmesine bas.</b> 3 saniyelik geri sayımdan sonra metin kendiliğinden akar. Hızı kayıt sırasında da değiştirebilirsin.</li>
+        <li><b>Bitince Çekimler › Kaydet.</b> Fotoğraflar'a kaydet ya da AirDrop ile bilgisayara gönder.</li>
+      </ol>
+      <p class="hint">Safari'de Paylaş › Ana Ekrana Ekle dersen sayfa tam ekran açılır.</p>
+      <div class="acts"><button class="textbtn primary" type="button" data-close>Anladım</button></div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const app = $('#app'), cam = $('#cam'), prompter = $('#prompter'), vp = $('#viewport'), scroller = $('#scroll'), textEl = $('#text'), player = $('#player');
+
+  const DEFAULT_SCRIPTS = [{
+    id: 'bolum-1',
+    title: 'Bölüm 1 · Giriş',
+    body: `Sayın kurul üyeleri, merhaba. Ben Berk Yardımoğlu, DeutschGate'in kurucusuyum. DeutschGate, Goethe-Zertifikat Almanca sınavlarına hazırlanan Türkçe konuşan adaylar için yapay zekâ destekli bir sınav hazırlık platformu. Bu videoda önce projemi anlatacağım; ardından çalışma alanımı ve hizmetin nasıl üretilip sunulduğunu göstereceğim.
+Kısaca kendimden bahsedeyim. İşletme mezunuyum ve 8 yıl Renault MAİS'te kurumsal filo satışında çalıştım. Son iki yıldır yapay zekâ destekli araçlarla yazılım geliştiriyorum; DeutschGate'i Nisan 2026'dan bu yana tek başıma geliştirdim. Goethe B1 sınavına da kendim hazırlandım ve sertifikamı aldım. Bu projede kurumsal satış, yazılım ve sınav deneyimimi bir araya getiriyorum.`
+  }];
+  const DEFAULTS = { wpm: 105, fs: 32, side: 'auto', mirror: true, dim: false, countdown: true, tipsSeen: false };
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('gozhizasi.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('gozhizasi.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  let scripts = store.get('scripts', null);
+  if (!Array.isArray(scripts) || !scripts.length) scripts = DEFAULT_SCRIPTS.map((s) => ({ ...s }));
+  let activeId = store.get('active', scripts[0].id);
+  if (!scripts.some((s) => s.id === activeId)) activeId = scripts[0].id;
+  const S = Object.assign({}, DEFAULTS, store.get('settings', {}));
+  const saveSettings = () => store.set('settings', S);
+  const saveScripts = () => { store.set('scripts', scripts); store.set('active', activeId); };
+  const active = () => scripts.find((s) => s.id === activeId) || scripts[0];
+
+  const fmt = (sec) => { sec = Math.max(0, Math.round(sec || 0)); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); };
+  const mb = (b) => (b / 1048576).toFixed(1).replace('.', ',') + ' MB';
+  const wordCount = (src) => src.replace(/\[[^\]]*\]/g, ' ').replace(/\/\//g, ' ').split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+  const slug = (s) => ((s || 'metin')
+    .replace(/ğ/g, 'g').replace(/Ğ/g, 'G').replace(/ü/g, 'u').replace(/Ü/g, 'U').replace(/ş/g, 's').replace(/Ş/g, 'S')
+    .replace(/ı/g, 'i').replace(/İ/g, 'I').replace(/ö/g, 'o').replace(/Ö/g, 'O').replace(/ç/g, 'c').replace(/Ç/g, 'C')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '')) || 'metin';
+
+  let toastTm = 0;
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTm); toastTm = setTimeout(() => { t.hidden = true; }, 3200); }
+
+  /* ---------- Metin ve akış ---------- */
+  let words = 0, offset = 0, maxOff = 0, lineH = 40, readAt = 100, pps = 0;
+  let playing = false, raf = 0, lastT = 0;
+
+  function renderText() {
+    const src = active().body || '';
+    textEl.textContent = '';
+    const paras = src.replace(/\r/g, '').split('\n').map((s) => s.trim()).filter(Boolean);
+    if (!paras.length) {
+      const p = document.createElement('p'); p.className = 'empty'; p.textContent = 'Metin boş. Metin düğmesinden yazını ekle.'; textEl.append(p);
+    }
+    for (const para of paras) {
+      const p = document.createElement('p');
+      for (const part of para.split(/(\[[^\]]*\]|\/\/)/)) {
+        if (!part) continue;
+        if (part === '//') { const s = document.createElement('span'); s.className = 'pause'; s.textContent = '‖'; p.append(' ', s, ' '); }
+        else if (part[0] === '[' && part[part.length - 1] === ']') { const s = document.createElement('span'); s.className = 'cue'; s.textContent = part.slice(1, -1); p.append(s); }
+        else p.append(part);
+      }
+      textEl.append(p);
+    }
+    const end = document.createElement('p'); end.className = 'end'; end.textContent = 'Son'; textEl.append(end);
+    words = wordCount(src);
+    offset = 0;
+    layout(false);
+  }
+
+  function resolveSide() {
+    if (innerWidth <= innerHeight) return 'top';
+    if (S.side === 'left' || S.side === 'right') return S.side;
+    const o = window.orientation;
+    if (o === 90) return 'left';
+    if (o === -90 || o === 270) return 'right';
+    const t = screen.orientation && screen.orientation.type;
+    return t === 'landscape-secondary' ? 'right' : 'left';
+  }
+
+  function layout(keepProgress) {
+    const prog = maxOff > 0 ? offset / maxOff : 0;
+    app.dataset.side = resolveSide();
+    document.documentElement.style.setProperty('--fs', S.fs + 'px');
+    const h = vp.clientHeight;
+    readAt = Math.round(h * (app.dataset.side === 'top' ? 0.26 : 0.40));
+    prompter.style.setProperty('--readAt', readAt + 'px');
+    lineH = parseFloat(getComputedStyle(textEl).lineHeight) || S.fs * 1.34;
+    const endEl = textEl.querySelector('.end');
+    maxOff = Math.max(0, (endEl ? endEl.offsetTop : textEl.scrollHeight) - lineH * 1.6);
+    if (keepProgress) offset = prog * maxOff;
+    offset = Math.min(Math.max(0, offset), maxOff);
+    updateSpeed(); apply(); updateMeta(); updateState();
+  }
+
+  function updateSpeed() { const dur = words * 60 / S.wpm; pps = dur > 0 ? maxOff / dur : 0; }
+  function apply() { scroller.style.transform = 'translate3d(0,' + (readAt - lineH / 2 - offset).toFixed(1) + 'px,0)'; }
+
+  function updateMeta() {
+    const el = $('#metaChip');
+    if (offset > 1 && pps > 0) el.textContent = 'kalan ' + fmt((maxOff - offset) / pps);
+    else el.textContent = words + ' kelime · ≈' + fmt(words * 60 / S.wpm);
+  }
+  function updateState() {
+    $('#stateChip').textContent = playing ? 'Akıyor' : (offset > 1 ? (offset >= maxOff - 1 ? 'Bitti' : 'Durdu') : 'Hazır');
+    $('#icoPlay').hidden = playing; $('#icoPause').hidden = !playing;
+    $('#playLbl').textContent = playing ? 'Durdur' : (offset > 1 && offset < maxOff - 1 ? 'Devam' : 'Prova');
+  }
+
+  function setPlaying(on) {
+    if (on && offset >= maxOff - 1) offset = 0;
+    playing = on && maxOff > 0;
+    updateState();
+    if (playing && !raf) { lastT = performance.now(); raf = requestAnimationFrame(tick); }
+  }
+  function tick(t) {
+    if (!playing) { raf = 0; return; }
+    const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
+    offset += pps * dt;
+    if (offset >= maxOff) { offset = maxOff; playing = false; updateState(); }
+    apply(); updateMeta();
+    raf = requestAnimationFrame(tick);
+  }
+  function nudge(lines) { offset = Math.min(maxOff, Math.max(0, offset + lines * lineH * 2)); apply(); updateMeta(); updateState(); }
+
+  function setWpm(v) {
+    S.wpm = Math.max(60, Math.min(200, Math.round(v / 5) * 5)); saveSettings();
+    $('#spdVal').textContent = S.wpm; updateSpeed(); updateMeta();
+  }
+  function setFs(v) {
+    S.fs = Math.max(20, Math.min(72, v)); saveSettings();
+    $('#fsVal').textContent = S.fs; layout(true);
+  }
+
+  // Dokun: dur/devam. Sürükle: geri/ileri.
+  let drag = null;
+  vp.addEventListener('pointerdown', (e) => { drag = { y: e.clientY, o: offset, moved: false }; try { vp.setPointerCapture(e.pointerId); } catch (err) {} });
+  vp.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dy = e.clientY - drag.y;
+    if (Math.abs(dy) > 8) drag.moved = true;
+    if (drag.moved) { offset = Math.min(maxOff, Math.max(0, drag.o - dy)); apply(); updateMeta(); updateState(); }
+  });
+  vp.addEventListener('pointerup', () => { if (drag && !drag.moved) setPlaying(!playing); drag = null; });
+  vp.addEventListener('pointercancel', () => { drag = null; });
+
+  /* ---------- Kamera ---------- */
+  let stream = null, actx = null, analyser = null, meterBuf = null, meterRaf = 0, wake = null;
+
+  function showCamMsg(msg) { $('#camMsg').textContent = msg; }
+
+  async function openCamera() {
+    if (stream) return true;
+    if (!window.isSecureContext) { showCamMsg('Kamera için sayfa https bağlantısıyla açılmalı.'); return false; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showCamMsg('Bu tarayıcı kamerayı açamıyor. Sayfayı Safari ile aç.'); return false; }
+    showCamMsg('Kamera açılıyor…');
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+      });
+    } catch (err) {
+      stream = null;
+      const n = err && err.name;
+      showCamMsg(
+        n === 'NotAllowedError' ? 'Kamera ya da mikrofon izni verilmedi. Ayarlar › Safari › Kamera ve Mikrofon’da “İzin Ver” seç, sonra sayfayı yenile.' :
+        n === 'NotReadableError' ? 'Kamera başka bir uygulamada açık. O uygulamayı kapatıp tekrar dene.' :
+        (n === 'NotFoundError' || n === 'OverconstrainedError') ? 'Ön kamera bulunamadı.' :
+        'Kamera açılamadı (' + (n || 'bilinmeyen hata') + ').');
+      return false;
+    }
+    cam.muted = true;
+    cam.srcObject = stream;
+    try { await cam.play(); } catch (err) {}
+    app.classList.add('has-cam');
+    setupMeter(); requestWake();
+    setTimeout(updateRes, 500);
+    return true;
+  }
+
+  function closeCamera() {
+    if (rec && rec.state !== 'inactive') stopRecording();
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null; cam.srcObject = null;
+    app.classList.remove('has-cam');
+    cancelAnimationFrame(meterRaf); meterRaf = 0;
+    if (actx) { try { actx.close(); } catch (err) {} actx = null; }
+    $('#micChip').hidden = true; $('#resChip').hidden = true;
+    showCamMsg('Metni şimdiden prova edebilirsin. Çekim için ön kamerayı aç.');
+  }
+
+  function updateRes() {
+    const w = cam.videoWidth, h = cam.videoHeight, el = $('#resChip');
+    if (!stream || !w) { el.hidden = true; return; }
+    const land = w > h;
+    el.hidden = false;
+    el.textContent = w + '×' + h + (land ? ' · yatay' : ' · dikey, yan çevir');
+    el.dataset.state = land && w >= 1280 ? 'ok' : 'warn';
+  }
+  cam.addEventListener('resize', updateRes);
+  cam.addEventListener('loadedmetadata', updateRes);
+
+  function setupMeter() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC || !stream || !stream.getAudioTracks().length) return;
+      actx = new AC();
+      const src = actx.createMediaStreamSource(stream);
+      analyser = actx.createAnalyser(); analyser.fftSize = 512;
+      src.connect(analyser);
+      meterBuf = new Uint8Array(analyser.fftSize);
+      if (actx.state === 'suspended') actx.resume().catch(() => {});
+      $('#micChip').hidden = false;
+      const bar = $('#micBar');
+      const loop = () => {
+        analyser.getByteTimeDomainData(meterBuf);
+        let s = 0;
+        for (let i = 0; i < meterBuf.length; i++) { const v = (meterBuf[i] - 128) / 128; s += v * v; }
+        const lvl = Math.min(1, Math.sqrt(s / meterBuf.length) * 5);
+        bar.style.transform = 'scaleX(' + lvl.toFixed(3) + ')';
+        meterRaf = requestAnimationFrame(loop);
+      };
+      loop();
+    } catch (err) {}
+  }
+  document.addEventListener('pointerdown', () => { if (actx && actx.state === 'suspended') actx.resume().catch(() => {}); }, { passive: true });
+
+  async function requestWake() {
+    try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wake = await navigator.wakeLock.request('screen'); } catch (err) {}
+  }
+
+  /* ---------- Kayıt ---------- */
+  let rec = null, chunks = [], recStart = 0, recDur = 0, recTimer = 0, cdTimer = 0, counting = false;
+  let takes = [], takeN = 0, current = null;
+
+  function pickMime() {
+    if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+    const list = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+    return list.find((t) => { try { return MediaRecorder.isTypeSupported(t); } catch (e) { return false; } }) || '';
+  }
+
+  function updateRecBtn() {
+    const recording = !!(rec && rec.state === 'recording');
+    app.classList.toggle('is-recording', recording);
+    app.classList.toggle('is-counting', counting);
+    $('#recBtn').setAttribute('aria-label', recording ? 'Kaydı bitir' : (counting ? 'Geri sayımı iptal et' : 'Kaydı başlat'));
+    $('#recChip').hidden = !recording;
+    for (const id of ['#editBtn', '#takesBtn', '#setBtn']) $(id).disabled = recording || counting;
+  }
+
+  async function onRecord() {
+    if (rec && rec.state === 'recording') { stopRecording(); return; }
+    if (counting) { cancelCountdown(); return; }
+    closeSheets();
+    if (!(await openCamera())) { toast('Kayıt için kamerayı açman gerekiyor.'); return; }
+    if (typeof MediaRecorder === 'undefined') { toast('Bu tarayıcı video kaydedemiyor. iOS 14.5 ya da üstü gerekli.'); return; }
+    if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+    setPlaying(false);
+    if (offset >= maxOff - 1) { offset = 0; apply(); updateMeta(); updateState(); }
+    if (S.countdown) runCountdown(3); else beginRecording();
+  }
+
+  function runCountdown(n) {
+    counting = true;
+    const el = $('#countdown'); let k = n;
+    el.textContent = k; el.hidden = false;
+    updateRecBtn();
+    cdTimer = setInterval(() => {
+      k -= 1;
+      if (k <= 0) { cancelCountdown(); beginRecording(); }
+      else el.textContent = k;
+    }, 1000);
+  }
+  function cancelCountdown() { clearInterval(cdTimer); counting = false; $('#countdown').hidden = true; updateRecBtn(); }
+
+  function beginRecording() {
+    if (!stream) return;
+    chunks = [];
+    const mime = pickMime();
+    const opts = { videoBitsPerSecond: 8000000, audioBitsPerSecond: 160000 };
+    let r;
+    try { r = new MediaRecorder(stream, mime ? Object.assign({ mimeType: mime }, opts) : opts); }
+    catch (e) { try { r = new MediaRecorder(stream); } catch (e2) { toast('Kayıt başlatılamadı (' + e2.name + ').'); return; } }
+    rec = r;
+    r.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    r.onstop = () => finishTake(r);
+    r.onerror = () => toast('Kayıt sırasında bir hata oldu. Çekimi kontrol et.');
+    r.start(1000);
+    recStart = performance.now();
+    updateRecBtn();
+    clearInterval(recTimer);
+    recTimer = setInterval(() => { $('#recClock').textContent = fmt((performance.now() - recStart) / 1000); }, 250);
+    $('#recClock').textContent = '0:00';
+    setTimeout(() => { if (rec === r && r.state === 'recording') setPlaying(true); }, 700);
+  }
+
+  function stopRecording() {
+    if (!rec || rec.state === 'inactive') return;
+    recDur = (performance.now() - recStart) / 1000;
+    try { rec.stop(); } catch (e) {}
+    setPlaying(false);
+    clearInterval(recTimer);
+    app.classList.remove('is-recording');
+    $('#recChip').hidden = true;
+    for (const id of ['#editBtn', '#takesBtn', '#setBtn']) $(id).disabled = false;
+  }
+
+  function finishTake(r) {
+    const type = r.mimeType || (chunks[0] && chunks[0].type) || 'video/mp4';
+    const blob = new Blob(chunks, { type });
+    chunks = [];
+    if (rec === r) rec = null;
+    updateRecBtn();
+    if (!blob.size) { toast('Çekim boş geldi. Bir daha dene.'); return; }
+    const ext = /mp4/.test(type) ? 'mp4' : (/quicktime/.test(type) ? 'mov' : 'webm');
+    takeN += 1;
+    const t = { n: takeN, blob, type, url: URL.createObjectURL(blob), dur: recDur, size: blob.size, at: new Date(), name: slug(active().title) + '_cekim' + takeN + '.' + ext, saved: false };
+    takes.unshift(t);
+    updateTakesLbl();
+    openSheet('takes');
+    selectTake(t);
+  }
+
+  function updateTakesLbl() { $('#takesLbl').textContent = takes.length ? 'Çekimler ' + takes.length : 'Çekimler'; }
+
+  function mkBtn(label, onClick, kind) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'textbtn' + (kind ? ' ' + kind : ''); b.textContent = label;
+    if (onClick) b.addEventListener('click', onClick);
+    return b;
+  }
+  function armed(btn, label, confirmLabel, action) {
+    let on = false, tm = 0;
+    btn.addEventListener('click', () => {
+      if (!on) { on = true; btn.textContent = confirmLabel; tm = setTimeout(() => { on = false; btn.textContent = label; }, 3000); return; }
+      clearTimeout(tm); on = false; btn.textContent = label; action();
+    });
+  }
+
+  function renderTakes() {
+    const box = $('#takeList');
+    box.textContent = '';
+    if (!takes.length) {
+      const p = document.createElement('p'); p.className = 'empty-note';
+      p.textContent = 'Henüz çekim yok. Kayıt düğmesine bas; geri sayımdan sonra metin akmaya başlar.';
+      box.append(p); player.hidden = true; return;
+    }
+    for (const t of takes) {
+      const row = document.createElement('div');
+      row.className = 'take'; row.setAttribute('aria-current', String(t === current));
+      const info = document.createElement('div');
+      const nm = document.createElement('div'); nm.className = 'take-name'; nm.textContent = 'Çekim ' + t.n;
+      const meta = document.createElement('div'); meta.className = 'take-meta';
+      meta.textContent = fmt(t.dur) + ' · ' + mb(t.size) + ' · ' + t.at.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      if (t.saved) { const s = document.createElement('span'); s.className = 'saved'; s.textContent = ' · kaydedildi'; meta.append(s); }
+      info.append(nm, meta);
+      const acts = document.createElement('div'); acts.className = 'take-acts';
+      const del = mkBtn('Sil', null, 'danger');
+      armed(del, 'Sil', 'Emin misin?', () => removeTake(t));
+      acts.append(mkBtn('İzle', () => selectTake(t)), mkBtn('Kaydet', () => saveTake(t), 'primary'), del);
+      row.append(info, acts);
+      box.append(row);
+    }
+  }
+  function selectTake(t) {
+    current = t;
+    player.src = t.url; player.hidden = false;
+    renderTakes();
+  }
+  function removeTake(t) {
+    if (current === t) { current = null; player.pause(); player.removeAttribute('src'); player.load(); }
+    URL.revokeObjectURL(t.url);
+    takes = takes.filter((x) => x !== t);
+    renderTakes(); updateTakesLbl();
+  }
+  async function saveTake(t) {
+    let file = null;
+    try { file = new File([t.blob], t.name, { type: t.type }); } catch (e) {}
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); t.saved = true; renderTakes(); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a');
+    a.href = t.url; a.download = t.name; document.body.append(a); a.click(); a.remove();
+    t.saved = true; renderTakes();
+    toast('İndirme başladı: ' + t.name);
+  }
+
+  /* ---------- Paneller ---------- */
+  function openSheet(name) {
+    document.querySelectorAll('.sheet').forEach((s) => { s.hidden = s.dataset.sheet !== name; });
+    if (name === 'editor') fillEditor();
+    if (name === 'takes') renderTakes();
+    if (name === 'settings') fillSettings();
+  }
+  function closeSheets() {
+    document.querySelectorAll('.sheet').forEach((s) => { s.hidden = true; });
+    player.pause();
+  }
+  document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => {
+    if (!$('#sheet-tips').hidden) { S.tipsSeen = true; saveSettings(); }
+    closeSheets();
+  }));
+
+  // Metin düzenleyici
+  let edTm = 0;
+  function renderTabs() {
+    const box = $('#edTabs'); box.textContent = '';
+    for (const s of scripts) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tab'; b.textContent = s.title || 'Adsız';
+      b.setAttribute('aria-pressed', String(s.id === activeId));
+      b.addEventListener('click', () => { activeId = s.id; saveScripts(); fillEditor(); renderText(); });
+      box.append(b);
+    }
+    const add = document.createElement('button');
+    add.type = 'button'; add.className = 'tab add'; add.textContent = '+ Yeni metin';
+    add.addEventListener('click', () => {
+      const s = { id: 'm' + Date.now(), title: 'Metin ' + (scripts.length + 1), body: '' };
+      scripts.push(s); activeId = s.id; saveScripts(); fillEditor(); renderText();
+      $('#edBody').focus();
+    });
+    box.append(add);
+  }
+  function edMeta() {
+    const n = wordCount(active().body || '');
+    $('#edMeta').textContent = n + ' kelime · ' + S.wpm + ' kelime/dk hızla ≈ ' + fmt(n * 60 / S.wpm);
+  }
+  function fillEditor() {
+    renderTabs();
+    $('#edTitle').value = active().title || '';
+    $('#edBody').value = active().body || '';
+    $('#edDel').hidden = scripts.length < 2;
+    edMeta();
+  }
+  $('#edTitle').addEventListener('input', (e) => {
+    active().title = e.target.value; saveScripts();
+    const tab = $('#edTabs .tab[aria-pressed="true"]'); if (tab) tab.textContent = e.target.value || 'Adsız';
+  });
+  $('#edBody').addEventListener('input', (e) => {
+    active().body = e.target.value; edMeta();
+    clearTimeout(edTm); edTm = setTimeout(() => { saveScripts(); renderText(); }, 300);
+  });
+  armed($('#edDel'), 'Bu metni sil', 'Emin misin? Sil', () => {
+    if (scripts.length < 2) return;
+    scripts = scripts.filter((s) => s.id !== activeId);
+    activeId = scripts[0].id; saveScripts(); fillEditor(); renderText();
+  });
+
+  // Ayarlar
+  function fillSettings() {
+    $('#fsVal').textContent = S.fs;
+    document.querySelectorAll('#sideSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === S.side)));
+    $('#mirrorSw').checked = S.mirror; $('#dimSw').checked = S.dim; $('#cdSw').checked = S.countdown;
+  }
+  function applyLook() { app.dataset.mirror = S.mirror ? '1' : '0'; app.dataset.dim = S.dim ? '1' : '0'; }
+  $('#fsDn').addEventListener('click', () => setFs(S.fs - 2));
+  $('#fsUp').addEventListener('click', () => setFs(S.fs + 2));
+  document.querySelectorAll('#sideSeg button').forEach((b) => b.addEventListener('click', () => { S.side = b.dataset.v; saveSettings(); fillSettings(); layout(true); }));
+  $('#mirrorSw').addEventListener('change', (e) => { S.mirror = e.target.checked; saveSettings(); applyLook(); });
+  $('#dimSw').addEventListener('change', (e) => { S.dim = e.target.checked; saveSettings(); applyLook(); });
+  $('#cdSw').addEventListener('change', (e) => { S.countdown = e.target.checked; saveSettings(); });
+  $('#tipsBtn').addEventListener('click', () => openSheet('tips'));
+  $('#camReBtn').addEventListener('click', async () => { closeCamera(); closeSheets(); await openCamera(); });
+
+  /* ---------- Ray düğmeleri ---------- */
+  $('#slower').addEventListener('click', () => setWpm(S.wpm - 5));
+  $('#faster').addEventListener('click', () => setWpm(S.wpm + 5));
+  $('#playBtn').addEventListener('click', () => setPlaying(!playing));
+  $('#backBtn').addEventListener('click', () => { offset = 0; apply(); updateMeta(); updateState(); });
+  $('#recBtn').addEventListener('click', onRecord);
+  $('#editBtn').addEventListener('click', () => openSheet('editor'));
+  $('#takesBtn').addEventListener('click', () => openSheet('takes'));
+  $('#setBtn').addEventListener('click', () => openSheet('settings'));
+  $('#camBtn').addEventListener('click', () => openCamera());
+  $('#frameBtn').addEventListener('click', (e) => {
+    const on = !app.classList.contains('is-frame');
+    app.classList.toggle('is-frame', on); e.currentTarget.setAttribute('aria-pressed', String(on));
+  });
+
+  // Klavye ve Bluetooth kumanda: boşluk dur/devam, oklar hız ve konum, R kayıt
+  addEventListener('keydown', (e) => {
+    if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (!document.querySelector('.sheet:not([hidden])')) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPlaying(!playing); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setWpm(S.wpm + 5); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); setWpm(S.wpm - 5); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); nudge(-1); }
+      else if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); nudge(1); }
+      else if (e.key === 'r' || e.key === 'R') onRecord();
+    } else if (e.key === 'Escape') closeSheets();
+  });
+
+  let rsTm = 0;
+  const relayout = () => { clearTimeout(rsTm); rsTm = setTimeout(() => { layout(true); updateRes(); }, 150); };
+  addEventListener('resize', relayout);
+  addEventListener('orientationchange', () => setTimeout(relayout, 300));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && rec && rec.state === 'recording') stopRecording();
+    if (document.visibilityState === 'visible' && stream) requestWake();
+  });
+  addEventListener('beforeunload', (e) => { if (takes.some((t) => !t.saved)) { e.preventDefault(); e.returnValue = ''; } });
+
+  /* ---------- Başlangıç ---------- */
+  applyLook();
+  $('#spdVal').textContent = S.wpm;
+  renderText();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout(true));
+  if (!S.tipsSeen) openSheet('tips');
+  (async () => {
+    try {
+      const p = navigator.permissions && await navigator.permissions.query({ name: 'camera' });
+      if (p && p.state === 'granted') openCamera();
+    } catch (e) {}
+  })();
+})();
+</script>
+</body>
+</html>
